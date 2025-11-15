@@ -21,7 +21,7 @@ def main():
     # Dynamically loads a translation file (.qm) based on the system's locale
     # to support multiple languages for the UI.
     translator = QTranslator()
-    translations_path = Path(__file__).resolve().parent.parent / "i18n"
+    translations_path = Path(__file__).resolve().parent / "i18n"
     # Use the base language code (e.g., "es" from "es_MX") for broad language matching.
     locale = QLocale.system().name().split('_')[0]
     if translator.load(f"{locale}", str(translations_path)):
@@ -30,18 +30,13 @@ def main():
     # --- QML Engine Setup ---
     # Loads the main QML file that defines the user interface.
     engine = QQmlApplicationEngine()
-    qml_file = Path(__file__).resolve().parent.parent / "main.qml"
+    qml_file = Path(__file__).resolve().parent / "main.qml"
     engine.load(qml_file)
 
     # Critical check: if the QML engine fails to load, it likely indicates a
     # syntax error in the QML. The application cannot run in this state.
     if not engine.rootObjects():
-        return -1
+        sys.exit(-1)
 
     # Hand control over to the Qt event loop until the application is closed.
-    return app.exec()
-
-
-if __name__ == "__main__":
-    # Execute the main application logic and ensure its exit code is returned.
-    sys.exit(main())
+    sys.exit(app.exec())
