@@ -11,32 +11,37 @@ Window {
     visible: true
     color: "white"
 
-    // Properties that would typically be managed by a Python backend.
-    // These are hardcoded for demonstration purposes.
+    // --- Backend Data Properties ---
+    // DEV-NOTE: These properties are hardcoded for demonstration and should be
+    // connected to a Python backend.
 
-    // Defines the absolute path to the currently active project directory.
-    // This path is used by child components to resolve relative asset paths.
-    // Example: "/home/user/projects/Ergo"
+    // The absolute path to the project directory, used by child components to
+    // resolve relative asset paths.
     property string currentProjectPath: "/home/andmoreduro/QtProjects/Ergo"
 
-    // Defines the list of relative image filenames to be displayed.
+    // A list of image paths, relative to `currentProjectPath`, to be displayed.
     property var currentImageFiles: [
         "assets/placeholder.svg",
         "assets/placeholder.svg"
     ]
 
+    // Divides the window into a resizable input form and output preview.
     SplitView {
         anchors.fill: parent
         orientation: Qt.Horizontal
 
+        // Left Panel: Contains all user-editable fields for document metadata and content.
         ScrollView {
             id: inputPanel
             SplitView.fillWidth: true
             SplitView.preferredWidth: parent.width / 2
 
+            // The width is bound to the parent to ensure the layout reflows
+            // correctly when the splitter is moved.
             ColumnLayout {
                 width: inputPanel.width
 
+                // --- Title Page Section ---
                 Label {
                     text: qsTr("Title Page")
                 }
@@ -92,6 +97,9 @@ Window {
                 Label {
                     text: qsTr("Content")
                 }
+
+                // A preferred height is set to prevent the content area from
+                // initially dominating the layout.
                 ScrollView {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 200
@@ -110,12 +118,14 @@ Window {
             }
         }
 
+        // Right Panel: Displays the rendered output. This is a custom
+        // component defined in 'components/OutputPanel.qml'.
         OutputPanel {
             id: outputPanel
             SplitView.fillWidth: true
             SplitView.preferredWidth: parent.width / 2
 
-            // Bind the component's properties to the main window's state.
+            // Pass the main window's data down to the output panel.
             projectPath: currentProjectPath
             relativeImageSources: currentImageFiles
         }

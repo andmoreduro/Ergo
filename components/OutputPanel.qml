@@ -2,62 +2,65 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+// Displays a scrollable, vertical list of images.
 ScrollView {
     id: root
+
+    // Prevent images from rendering outside the component's boundaries.
     clip: true
 
-    // Set padding on the ScrollView directly. This is the idiomatic way
-    // to create space around the scrollable content.
+    // Provides a consistent margin around the content.
     leftPadding: 50
     rightPadding: 50
     topPadding: 50
 
-    // Holds the absolute path to the root of the active project directory.
-    // This path is used as the base for resolving relative image sources.
-    // Example: "/home/user/Documents/MyProject"
+    // --- Public API ---
+    // These properties are set by the parent to control the displayed content.
+
+    // Absolute path to the project directory, used as a base for image paths.
     property string projectPath: ""
 
-    // Holds a list of relative filenames for the images to be displayed.
-    // Paths are resolved relative to the `projectPath`.
-    // Example: ["assets/image1.svg", "assets/figure2.svg"]
+    // List of image file paths, relative to `projectPath`.
     property var relativeImageSources: []
 
-    // A read-only property that constructs a list of full, well-formed file URLs
-    // by combining `projectPath` and `relativeImageSources`. This list serves as the
-    // model for the Repeater.
+    // --- Internal Logic ---
+    // Transforms the relative image paths into a list of full, loadable file URLs
+    // to be used as the model for the Repeater.
     readonly property var fullImagePaths: {
-        // Prevent errors if projectPath is not yet set.
+        // Guard against an unset project path.
         if (!projectPath || projectPath === "") return [];
+
         return relativeImageSources.map(function(fileName) {
-            // Prepend the standard 'file:///' prefix for local file access.
+            // Prepend the "file:///" prefix required for local file access.
             return "file:///" + projectPath + "/" + fileName;
         });
     }
 
     ColumnLayout {
-        // The layout's width should track the available width of the ScrollView,
-        // which automatically accounts for the padding we added above.
+        // Bind the width to the parent's available width to respect its padding.
         width: root.availableWidth
-        spacing: 10
+        spacing: 10 // Vertical spacing between each image.
 
-        // Dynamically generates Image components based on the `fullImagePaths` model.
+        // Dynamically generate an Image component for each path in the model.
         Repeater {
             model: root.fullImagePaths
 
+            // The delegate is the template for each dynamically created image.
             delegate: Item {
-                // The delegate is a lightweight container for the image.
                 Layout.fillWidth: true
-                // Calculate the required height to maintain the image's aspect ratio
-                // based on the available width. This breaks the circular dependency
-                // that occurs when using 'paintedHeight'.
+
+                // DEV-NOTE: Height is calculated from the image's aspect ratio
+                // and available width. This avoids a circular binding dependency
+                // that would occur if binding to `paintedHeight`.
                 Layout.preferredHeight: imageContent.sourceSize.width > 0 ? (width / imageContent.sourceSize.width * imageContent.sourceSize.height) : 0
 
                 Image {
                     id: imageContent
                     anchors.fill: parent
-                    source: modelData
+                    source: modelData // Provided by the Repeater.
+
                     fillMode: Image.PreserveAspectFit
-                    asynchronous: true
+                    asynchronous: true // Prevent UI freeze while loading large images.
                 }
             }
         }
