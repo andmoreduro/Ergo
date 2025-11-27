@@ -134,22 +134,10 @@ class ProjectManager(QObject):
         print(f"Copying from template structure: {structure_path}")
 
         try:
-            # Copies the entire structure directory contents to the project location.
-            # Uses shutil.copytree with dirs_exist_ok=True to allow copying into
-            # an existing directory (in case the user selected a non-empty folder).
-            for item in structure_path.iterdir():
-                source = item
-                destination = project_path / item.name
-
-                if source.is_dir():
-                    # Recursively copies directories.
-                    shutil.copytree(source, destination, dirs_exist_ok=True)
-                    print(f"  Copied directory: {item.name}")
-                else:
-                    # Copies individual files.
-                    shutil.copy2(source, destination)
-                    print(f"  Copied file: {item.name}")
-
+            # Use a single shutil.copytree call to merge the template structure
+            # into the project location. This correctly handles subdirectories
+            # and files, preserving the hierarchy.
+            shutil.copytree(structure_path, project_path, dirs_exist_ok=True)
             print("Project structure created successfully.")
 
             # Adds the newly created project to the recent projects list.
