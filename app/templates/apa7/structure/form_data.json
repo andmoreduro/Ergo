@@ -1,0 +1,33 @@
+{
+  "title": "My Research Paper",
+  "running_head": "MY RESEARCH PAPER",
+  "author_notes": "No conflict of interest to disclose.",
+  "course": "PSY 101: Introduction to Psychology",
+  "instructor": "Dr. Jane Smith",
+  "due_date": "October 24, 2023",
+  "abstract": "This is a placeholder abstract. Replace this text with your own abstract.",
+  "keywords": "psychology, research, apa style",
+  "authors": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "orcid": "",
+      "affiliationIds": [
+        1
+      ]
+    }
+  ],
+  "affiliations": [
+    {
+      "id": 1,
+      "name": "Department of Psychology, University of Example"
+    }
+  ],
+  "font_family": "Libertinus Serif",
+  "font_size": 12,
+  "paper_size": "us-letter",
+  "region": "us",
+  "language": "en",
+  "implicit_intro": false,
+  "abstract_as_desc": true
+}
