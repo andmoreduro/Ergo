@@ -87,13 +87,25 @@ ApplicationWindow {
         source: "InitialView.qml"
 
         onLoaded: {
-            // Passes the selected template to ProjectView if it has a templateName property.
-            if (viewLoader.item && viewLoader.item.hasOwnProperty("templateName")) {
-                viewLoader.item.templateName = root.selectedTemplate;
+            // Passes properties to the newly loaded view
+            if (viewLoader.item) {
+                if (viewLoader.item.hasOwnProperty("templateName")) {
+                    viewLoader.item.templateName = root.selectedTemplate;
+                }
+                if (viewLoader.item.hasOwnProperty("projectLocation")) {
+                    viewLoader.item.projectLocation = root.projectLocation;
+                }
             }
-            // Passes the project location to ProjectView if it has a projectLocation property.
-            if (viewLoader.item && viewLoader.item.hasOwnProperty("projectLocation")) {
-                viewLoader.item.projectLocation = root.projectLocation;
+
+            // If we just loaded the project view, explicitly tell the form to load its data.
+            // This is more reliable than Component.onCompleted for new projects.
+            if (source.toString().endsWith("ProjectView.qml")) {
+                var form = viewLoader.item ? viewLoader.item.formItem : null;
+                if (form && form.loadSavedData) {
+                    // Use a short timer to ensure the form item is fully constructed
+                    // before we try to call its functions. This resolves race conditions.
+                    Qt.callLater(form.loadSavedData);
+                }
             }
         }
     }

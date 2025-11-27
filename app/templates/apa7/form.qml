@@ -800,8 +800,6 @@ Item {
     }
 
     Component.onCompleted: {
-        // Starts with empty form - users add authors and affiliations as needed
-        // Generates initial main.typ file
-        apaForm.loadSavedData();
+        // Data is now loaded explicitly by the main view (main.qml) to prevent race conditions.
     }
 }

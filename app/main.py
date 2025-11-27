@@ -34,10 +34,10 @@ def main():
 
     # --- Style Setup ---
     # Sets the Qt Quick Controls style based on the platform for better integration.
-    # On Windows, uses the native Windows style. On Linux, we let Qt auto-detect
-    # the style to respect system themes (like Breeze on KDE).
-    if sys.platform == 'win32':
-        QQuickStyle.setStyle("Windows")
+    # Enforce Fusion style with a light palette for a consistent, professional
+    # look across all platforms (Windows, Linux, macOS).
+    QQuickStyle.setStyle("Fusion")
+    QQuickStyle.setPalette("Light")
 
     # --- Backend Setup ---
     # Instantiates the managers that handle backend logic.
