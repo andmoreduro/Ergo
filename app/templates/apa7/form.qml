@@ -114,10 +114,12 @@ Item {
     function loadSavedData() {
         isLoading = true;
         
+        var dataLoaded = false;
         if (typeof apa7FormHandler !== 'undefined') {
             var data = apa7FormHandler.load_form_data();
             
             if (data && Object.keys(data).length > 0) {
+                dataLoaded = true;
                 // Helper to safely get string
                 var getStr = function(val) { return val ? val : ""; };
                 
@@ -130,6 +132,7 @@ Item {
                 abstractTextArea.text = getStr(data.abstract);
                 keywordsField.text = getStr(data.keywords);
                 
+                // Load formatting settings
                 if (data.font_family) apaForm.fontFamily = data.font_family;
                 if (data.font_size) apaForm.fontSize = data.font_size;
                 if (data.paper_size) apaForm.paperSize = data.paper_size;
@@ -137,6 +140,10 @@ Item {
                 if (data.language) apaForm.language = data.language;
                 if (data.implicit_intro !== undefined) apaForm.implicitIntroductionHeading = data.implicit_intro;
                 if (data.abstract_as_desc !== undefined) apaForm.abstractAsDescription = data.abstract_as_desc;
+
+                if (data.sections) {
+                    apaForm.sections = data.sections;
+                }
 
                 if (data.affiliations) {
                     apaForm.affiliations = data.affiliations;
@@ -155,18 +162,19 @@ Item {
                     }
                     apaForm.nextAuthorId = maxAuthId + 1;
                 }
-
-                if (data.sections) {
-                    apaForm.sections = data.sections;
-                }
                 
                 apaForm.updateValidAffiliationsState();
             }
         }
         
         isLoading = false;
-        // Force one update to sync everything and generate file
-        apaForm.scheduleUpdate();
+        
+        // ONLY schedule an update if we actually loaded data.
+        // This prevents overwriting a new project's default JSON
+        // with an empty state before the user has made any changes.
+        if (dataLoaded) {
+            apaForm.scheduleUpdate();
+        }
     }
 
     // Function to collect all form data and generate main.typ
