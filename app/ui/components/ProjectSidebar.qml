@@ -9,6 +9,10 @@ Item {
     property int refreshTrigger: 0
     property var bibliographyList: []
 
+    function openAddReferenceDialog() {
+        addRefDialog.open()
+    }
+
     Connections {
         target: bibliographyManager
         function onEntriesChanged(entries) {
@@ -147,11 +151,21 @@ Item {
                                     Layout.fillWidth: true
                                 }
                                 Label {
-                                    text: modelData.ENTRYTYPE + " (" + (modelData.year || modelData.date || "????") + ")"
+                                    text: modelData.ENTRYTYPE + " (" + (modelData.year || modelData.date || "n.d.") + ")"
                                     font.pointSize: 8
                                     color: root.palette.text
                                     opacity: 0.6
                                 }
+                            }
+
+                            Button {
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: 5
+                                text: "×"
+                                flat: true
+                                visible: parent.hovered
+                                onClicked: bibliographyManager.remove_entry(modelData.ID)
                             }
 
                             Button {
@@ -188,6 +202,25 @@ Item {
                         id: addRefDialog
                         parent: Overlay.overlay
                         anchors.centerIn: parent
+                    }
+
+                    SelectCitationDialog {
+                        // This dialog is opened from another component, but we need
+                        // a connection from its signal to our AddReferenceDialog.
+                        // Placing an instance here allows us to make that connection.
+                        // Note: This assumes only one instance of this dialog will be created.
+                        id: selectCitationDialog
+                        parent: Overlay.overlay
+                        anchors.centerIn: parent
+
+                        // When the user clicks "Create New..." in the select dialog,
+                        // it emits createNewReference. We catch that signal and open
+                        // the dialog for adding a new reference.
+                        onCreateNewReference: {
+                            // Use a short timer to allow the select dialog to close
+                            // before the new one opens, avoiding visual glitches.
+                            Qt.callLater(addRefDialog.open)
+                        }
                     }
                 }
             }

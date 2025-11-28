@@ -8,7 +8,7 @@ Dialog {
     title: qsTr("Add Reference")
     modal: true
     width: 450
-    
+
     signal referenceAdded()
 
     onOpened: {
@@ -28,7 +28,7 @@ Dialog {
         Button {
             text: qsTr("Add")
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-            enabled: keyField.text.length > 0 && titleField.text.length > 0
+            enabled: titleField.text.length > 0
         }
         Button {
             text: qsTr("Cancel")
@@ -38,12 +38,12 @@ Dialog {
             var fields = {}
             if (titleField.text) fields["title"] = titleField.text
             if (authorField.text) fields["author"] = authorField.text
-            if (yearField.text) fields["date"] = yearField.text // BibLaTeX uses 'date' or 'year'
+            if (yearField.text) fields["date"] = yearField.text
             if (publisherField.visible && publisherField.text) fields["publisher"] = publisherField.text
             if (journalField.visible && journalField.text) fields["journaltitle"] = journalField.text // BibLaTeX prefers journaltitle
             if (doiField.text) fields["doi"] = doiField.text
             if (urlField.text) fields["url"] = urlField.text
-            
+
             bibliographyManager.add_entry(typeCombo.currentValue, keyField.text, fields)
             root.referenceAdded()
             root.close()
@@ -53,7 +53,7 @@ Dialog {
 
     contentItem: ColumnLayout {
         spacing: 10
-        
+
         // Type
         RowLayout {
             Label { text: qsTr("Type"); Layout.preferredWidth: 100 }
@@ -80,19 +80,19 @@ Dialog {
             TextField {
                 id: keyField
                 Layout.fillWidth: true
-                placeholderText: qsTr("e.g. Smith2023")
+                placeholderText: qsTr("e.g. Smith2023 (randomly generated if blank)")
                 selectByMouse: true
             }
         }
-        
-        Rectangle { 
-            Layout.fillWidth: true; height: 1; color: root.palette.mid; opacity: 0.5 
+
+        Rectangle {
+            Layout.fillWidth: true; height: 1; color: root.palette.mid; opacity: 0.5
             Layout.topMargin: 5; Layout.bottomMargin: 5
         }
 
         // Title
         RowLayout {
-            Label { text: qsTr("Title"); Layout.preferredWidth: 100 }
+            Label { text: qsTr("Title") + " <font color='red'>*</font>"; Layout.preferredWidth: 100 }
             TextField {
                 id: titleField
                 Layout.fillWidth: true
@@ -135,7 +135,7 @@ Dialog {
                 selectByMouse: true
             }
         }
-        
+
         // Journal (Articles)
         RowLayout {
             visible: typeCombo.currentValue === "article"

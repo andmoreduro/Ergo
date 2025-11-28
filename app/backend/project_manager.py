@@ -156,9 +156,24 @@ class ProjectManager(QObject):
         return QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
 
     @Slot(result=str)
+    def get_documents_location(self):
+        """
+        Gets the platform-specific user Documents folder path.
+
+        Returns:
+            The path to the Documents folder as a string.
+        """
+        return QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
+
+    @Slot(result=str)
     def generate_unique_id(self):
         """Generates a unique ID for an image label."""
         return f"img:{uuid.uuid4()}"
+
+    @Slot(result=str)
+    def generate_citation_key(self):
+        """Generates a unique citation key for a bibliography entry."""
+        return f"ref:{uuid.uuid4().hex[:8]}"
 
     @Slot(str, str)
     def create_project(self, project_location: str, template_name: str):

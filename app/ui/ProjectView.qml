@@ -15,6 +15,16 @@ Item {
     property string projectLocation: ""
     property alias formItem: formLoader.item
 
+    signal createNewReference()
+
+    // Pass the signal from the dynamically loaded form up to the parent view
+    Connections {
+        target: formLoader.item
+        function onCreateNewReference() {
+            projectView.createNewReference()
+        }
+    }
+
     onProjectLocationChanged: {
         if (projectLocation !== "") {
             bibliographyManager.set_project_path(projectLocation)
@@ -34,6 +44,11 @@ Item {
             SplitView.preferredWidth: mainSplitView.width * 0.20
             SplitView.minimumWidth: 150
             formItem: projectView.formItem
+
+            Component.onCompleted: {
+                // Connect the view's signal to the sidebar's function
+                projectView.createNewReference.connect(sidebar.openAddReferenceDialog)
+            }
         }
 
         // --- Second Column: Form Input Panel ---

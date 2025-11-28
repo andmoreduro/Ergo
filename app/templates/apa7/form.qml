@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../../ui/components"
 
 Item {
     id: apaForm
@@ -15,6 +16,19 @@ Item {
     property var affiliations: []
     property var sections: []
     property string projectLocation: ""
+    property var currentTargetTextArea: null
+
+    signal createNewReference()
+
+    function hasCitations(text) {
+        var regex = /#cite\s*\(\s*<[^>]+>\s*\)/;
+        return regex.test(text);
+    }
+
+    function removeCitations(text) {
+        var regex = / #cite\s*\(\s*<[^>]+>\s*\)/g;
+        return text.replace(regex, "");
+    }
 
     // Property to track if there are valid affiliations (updates without recreating delegates)
     property bool hasValidAffiliations: false
@@ -706,21 +720,48 @@ Item {
                             }
 
                             // Text Block
-                            TextArea {
+                            ColumnLayout {
                                 visible: modelData.type === "text"
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: Math.max(100, implicitHeight)
-                                wrapMode: Text.WordWrap
-                                placeholderText: qsTr("Paragraph text...")
-                                text: modelData.content || ""
-                                onTextChanged: {
-                                    var section = apaForm.sections[sectionIndex];
-                                    if (section.blocks) {
-                                        section.blocks[index].content = text;
-                                    } else {
-                                        section.content = text;
+                                spacing: 5
+
+                                TextArea {
+                                    id: textBlockArea
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: Math.max(100, implicitHeight)
+                                    wrapMode: Text.WordWrap
+                                    placeholderText: qsTr("Paragraph text...")
+                                    text: modelData.content || ""
+                                    onTextChanged: {
+                                        var section = apaForm.sections[sectionIndex];
+                                        if (section.blocks) {
+                                            section.blocks[index].content = text;
+                                        } else {
+                                            section.content = text;
+                                        }
+                                        apaForm.scheduleUpdate();
                                     }
-                                    apaForm.scheduleUpdate();
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Item { Layout.fillWidth: true } // Spacer
+                                    Button {
+                                        text: qsTr("Uncite")
+                                        flat: true
+                                        visible: apaForm.hasCitations(textBlockArea.text)
+                                        onClicked: {
+                                            textBlockArea.text = apaForm.removeCitations(textBlockArea.text)
+                                        }
+                                    }
+                                    Button {
+                                        text: qsTr("Cite")
+                                        flat: true
+                                        onClicked: {
+                                            apaForm.currentTargetTextArea = textBlockArea;
+                                            selectCitationDialog.open();
+                                        }
+                                    }
                                 }
                             }
 
@@ -803,6 +844,23 @@ Item {
                         opacity: 0.1
                         Layout.topMargin: 5
                         Layout.bottomMargin: 5
+                    }
+
+                    SelectCitationDialog {
+                        id: selectCitationDialog
+                        parent: Overlay.overlay
+                        anchors.centerIn: parent
+                        onCitationSelected: (citationKey) => {
+                            if (apaForm.currentTargetTextArea) {
+                                // Append text. Using insert allows placing cursor at the end.
+                                apaForm.currentTargetTextArea.insert(
+                                apaForm.currentTargetTextArea.length, 
+                                " #cite(<" + citationKey + ">)"
+                            );
+                                apaForm.currentTargetTextArea.forceActiveFocus();
+                            }
+                        }
+                        onCreateNewReference: apaForm.createNewReference()
                     }
                 }
             }

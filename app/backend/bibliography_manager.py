@@ -5,6 +5,7 @@ This module provides functionality to load, add, remove, and save bibliography
 entries to a .bib (or .tex) file using the bibtexparser library.
 """
 
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -57,8 +58,8 @@ class BibliographyManager(QObject):
         bib_dir = self.project_path / "bibliography"
         bib_dir.mkdir(exist_ok=True)
         
-        # User requested bibliography/bib.tex (standard is .bib, but we follow instructions)
-        self.bib_file_path = bib_dir / "bib.tex"
+        # The bibliography file will be named ref.bib
+        self.bib_file_path = bib_dir / "ref.bib"
 
         if not self.bib_file_path.exists():
             # Create empty file
@@ -103,8 +104,7 @@ class BibliographyManager(QObject):
             return
 
         if not citation_key:
-            self.errorOccurred.emit("Citation key cannot be empty")
-            return
+            citation_key = f"ref:{uuid.uuid4().hex[:8]}"
 
         # Create entry dict required by bibtexparser
         entry = {
@@ -124,6 +124,24 @@ class BibliographyManager(QObject):
         
         if self.save_bibliography():
             self._emit_entries()
+
+    @Slot(str)
+    def remove_entry(self, citation_key: str):
+        """
+        Removes an entry by citation key.
+        
+        Args:
+            citation_key: The ID of the entry to remove.
+        """
+        if not self.bib_file_path:
+            return
+
+        original_count = len(self.db.entries)
+        self.db.entries = [e for e in self.db.entries if e.get('ID') != citation_key]
+        
+        if len(self.db.entries) != original_count:
+            if self.save_bibliography():
+                self._emit_entries()
 
     @Slot(str)
     def remove_entry(self, citation_key: str):

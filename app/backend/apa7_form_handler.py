@@ -369,14 +369,14 @@ class Apa7FormHandler(QObject):
                 lines.append(f'#include "sections/{sec_id}.typ"')
         lines.append("")
 
-        # Bibliography (commented out template)
-        lines.append("// Bibliography")
-        lines.append("// #bibliography(")
-        lines.append('//   "bibliography/ref.yml",')
-        lines.append('//   style: "csl/apa.csl",')
-        lines.append("//   full: true,")
-        lines.append("//   title: auto,")
-        lines.append("// )")
+        # Bibliography
+        lines.append("#pagebreak()")
+        lines.append("#bibliography(")
+        lines.append('  "bibliography/ref.bib",')
+        lines.append('  style: "csl/apa.csl",')
+        lines.append("  full: true,")
+        lines.append("  title: auto,")
+        lines.append(")")
 
         return "\n".join(lines)
 
