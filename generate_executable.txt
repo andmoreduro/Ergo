@@ -1,0 +1,9 @@
+pyinstaller run.py \
+--name Ergo \
+--windowed \
+--noconfirm \
+--add-data "app/ui:app/ui" \
+--add-data "app/templates:app/templates" \
+--add-data "app/i18n:app/i18n" \
+--add-data "app/bin:app/bin" \
+--hidden-import "PySide6.QtSvg"
