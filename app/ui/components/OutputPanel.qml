@@ -85,6 +85,14 @@ ColumnLayout {
 
             Item { Layout.fillWidth: true } // Spacer
 
+            Button {
+                text: qsTr("⇩ PDF")
+                flat: true
+                onClicked: processManager.export_pdf()
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Export project as PDF")
+            }
+
             // Zoom Controls
             Button {
                 text: "−"

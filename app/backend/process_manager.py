@@ -157,6 +157,39 @@ class ProcessManager(QObject):
         """
         return self.process.state() != QProcess.ProcessState.NotRunning
 
+    @Slot()
+    def export_pdf(self):
+        """
+        Compiles the project to PDF.
+        """
+        if not self.project_path:
+            print("Error: Cannot export PDF - project path not set.")
+            return
+
+        executable_path = self._get_typst_executable_path()
+        if not executable_path:
+            return
+
+        print("Starting PDF export...")
+
+        process = QProcess()
+        process.setWorkingDirectory(self.project_path)
+        
+        # Arguments for typst compile: typst compile main.typ
+        arguments = ["compile", "main.typ"]
+
+        process.start(executable_path, arguments)
+        
+        if process.waitForFinished(10000):  # 10 second timeout
+            if process.exitStatus() == QProcess.ExitStatus.NormalExit and process.exitCode() == 0:
+                print("PDF export successful.")
+            else:
+                print(f"PDF export failed. Exit code: {process.exitCode()}")
+                print(f"Error output: {process.readAllStandardError().data().decode('utf-8')}")
+        else:
+            print("PDF export timed out.")
+            process.kill()
+
     def _handle_stdout(self):
         """Handles standard output from the Typst process."""
         data = self.process.readAllStandardOutput()

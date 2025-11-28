@@ -7,6 +7,7 @@ it to the appropriate Typst syntax for the versatile-apa package.
 """
 
 import json
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -128,16 +129,57 @@ class Apa7FormHandler(QObject):
             for section in sections:
                 sec_id = section.get("id")
                 sec_title = section.get("title", "")
-                sec_content = section.get("content", "")
-                level = int(section.get("level", 1))
+                
+                # Determine content from blocks (text/image) or fallback to simple content
+                blocks = section.get("blocks", [])
+                if blocks:
+                    parts = []
+                    for block in blocks:
+                        b_type = block.get("type", "text")
+                        if b_type == "text":
+                            parts.append(block.get("content", ""))
+                        elif b_type == "image":
+                            path = block.get("path", "").replace("\\", "/")
+                            caption = block.get("caption", "")
+                            note = block.get("note", "")
+                            
+                            label = block.get("label", "")
+                            if not label:
+                                label = f"img:{uuid.uuid4()}"
+                                block["label"] = label
 
-                heading_markup = f"{'=' * level} {self._escape_typst(sec_title)}"
-                full_content = f"{heading_markup}\n\n{sec_content}"
+                            fig_code = "#figure(\n"
+                            fig_code += f'  image("../{path}"),\n'
+                            if caption:
+                                fig_code += f"  caption: [{self._escape_typst(caption)}],\n"
+                            fig_code += ")"
+                            if label:
+                                fig_code += f" <{label}>"
+                            
+                            if note:
+                                fig_code += "\n#pad(top: 0.5em)[\n"
+                                fig_code += f'  #text(style: "italic")[Note.] {self._escape_typst(note)}\n'
+                                fig_code += "]"
+                            
+                            parts.append(fig_code)
+                    sec_content = "\n\n".join(parts)
+                else:
+                    sec_content = section.get("content", "")
+
+                level = int(section.get("level", 1))
+                is_implicit = section.get("isImplicit", False)
+
+                if is_implicit:
+                    full_content = sec_content
+                else:
+                    heading_markup = f"{'=' * level} {self._escape_typst(sec_title)}"
+                    full_content = f"{heading_markup}\n\n{sec_content}"
 
                 if level == 1:
                     # Write previous accumulated L1 section if exists
                     if current_l1_id:
-                        (sections_dir / f"{current_l1_id}.typ").write_text("\n\n".join(current_l1_content), encoding="utf-8")
+                        file_content = '#import "@preview/versatile-apa:7.1.5": *\n\n' + "\n\n".join(current_l1_content)
+                        (sections_dir / f"{current_l1_id}.typ").write_text(file_content, encoding="utf-8")
                     
                     current_l1_id = sec_id
                     current_l1_content = [full_content]
@@ -148,7 +190,8 @@ class Apa7FormHandler(QObject):
 
             # Write the final section
             if current_l1_id:
-                (sections_dir / f"{current_l1_id}.typ").write_text("\n\n".join(current_l1_content), encoding="utf-8")
+                file_content = '#import "@preview/versatile-apa:7.1.5": *\n\n' + "\n\n".join(current_l1_content)
+                (sections_dir / f"{current_l1_id}.typ").write_text(file_content, encoding="utf-8")
 
             content = self._build_main_typ_content(
                 title,
@@ -245,6 +288,8 @@ class Apa7FormHandler(QObject):
         # Import statement
         lines.append('#import "@preview/versatile-apa:7.1.5": *')
         lines.append("")
+
+
 
         # Document title
         lines.append("// Document titles should be formatted in title case")

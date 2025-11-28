@@ -34,7 +34,7 @@ Item {
 
         RecentProjectsView {
             id: recentProjectsView
-            onProjectOpened: {
+            onProjectOpened: (projectPath) => {
                 var mainWindow = initialView.Window.window;
                 if (mainWindow && mainWindow.openProject) {
                     mainWindow.openProject(projectPath);

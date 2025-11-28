@@ -57,6 +57,12 @@ Item {
                         console.log("Successfully loaded form for template:", projectView.templateName);
                     }
                 }
+
+                Binding {
+                    target: formLoader.item
+                    property: "projectLocation"
+                    value: projectView.projectLocation
+                }
             }
 
             // Fallback message if no template is selected or form fails to load.

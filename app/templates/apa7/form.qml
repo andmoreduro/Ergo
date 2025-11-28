@@ -14,6 +14,7 @@ Item {
     property var authors: []
     property var affiliations: []
     property var sections: []
+    property string projectLocation: ""
     
     // Property to track if there are valid affiliations (updates without recreating delegates)
     property bool hasValidAffiliations: false
@@ -618,6 +619,7 @@ Item {
                 id: sectionsRepeater
                 model: apaForm.sections
                 delegate: ColumnLayout {
+                    property int sectionIndex: index
                     Layout.fillWidth: true
                     spacing: 5
                     Layout.leftMargin: ((modelData.level || 1) - 1) * 30
@@ -626,9 +628,13 @@ Item {
                         Layout.fillWidth: true
 
                         Label {
-                            text: (modelData.level || 1) > 1 ? "↳" : ""
-                            visible: (modelData.level || 1) > 1
+                            text: {
+                                var lvl = modelData.level || 1;
+                                var subscripts = ["₀", "₁", "₂", "₃", "₄", "₅"];
+                                return "#" + (subscripts[lvl] || lvl);
+                            }
                             font.bold: true
+                            opacity: 0.6
                         }
 
                         TextField {
@@ -646,33 +652,137 @@ Item {
                             }
                         }
                         Button {
-                            text: "+ Sub"
+                            text: "⋮"
                             flat: true
-                            visible: (modelData.level || 1) < 5 && !modelData.isImplicit
-                            onClicked: apaForm.addSubsection(index)
-                        }
-
-                        Button {
-                            text: "−"
-                            flat: true
-                            Layout.preferredWidth: 40
-                            enabled: !modelData.isImplicit
-                            onClicked: apaForm.removeSection(index)
+                            visible: !modelData.isImplicit
+                            onClicked: sectionMenu.open()
+                            
+                            Menu {
+                                id: sectionMenu
+                                y: parent.height
+                                
+                                MenuItem {
+                                    text: qsTr("Add Subsection")
+                                    enabled: (modelData.level || 1) < 5
+                                    onTriggered: apaForm.addSubsection(index)
+                                }
+                                MenuItem {
+                                    text: qsTr("Delete Section")
+                                    onTriggered: apaForm.removeSection(index)
+                                }
+                            }
                         }
                     }
 
-                    TextArea {
-                        id: sectionContentField
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 200
-                        wrapMode: Text.WordWrap
-                        placeholderText: qsTr("Section content (Typst markup supported)")
-                        text: modelData.content
-                        onTextChanged: {
-                            if (text !== modelData.content) {
-                                apaForm.sections[index].content = text;
-                                apaForm.scheduleUpdate();
+                    // Content Blocks
+                    Repeater {
+                        id: blocksRepeater
+                        model: modelData.blocks || (modelData.content ? [{type: "text", content: modelData.content}] : [])
+                        delegate: ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 5
+                            
+                            // Header for block
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Item { Layout.fillWidth: true }
+                                Button {
+                                    text: "×"
+                                    flat: true
+                                    display: AbstractButton.TextOnly
+                                    font.pixelSize: 14
+                                    onClicked: apaForm.removeBlock(sectionIndex, index)
+                                }
                             }
+
+                            // Text Block
+                            TextArea {
+                                visible: modelData.type === "text"
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Math.max(100, implicitHeight)
+                                wrapMode: Text.WordWrap
+                                placeholderText: qsTr("Paragraph text...")
+                                text: modelData.content || ""
+                                onTextChanged: {
+                                    var section = apaForm.sections[sectionIndex];
+                                    if (section.blocks) {
+                                        section.blocks[index].content = text;
+                                    } else {
+                                        section.content = text;
+                                    }
+                                    apaForm.scheduleUpdate();
+                                }
+                            }
+
+                            // Image Block
+                            ColumnLayout {
+                                visible: modelData.type === "image"
+                                Layout.fillWidth: true
+                                spacing: 5
+                                
+                                Image {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 200
+                                    fillMode: Image.PreserveAspectFit
+                                    source: modelData.path ? "file:///" + apaForm.projectLocation + "/" + modelData.path : ""
+                                    mipmap: true
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        color: "transparent"
+                                        border.color: apaForm.palette.mid
+                                        visible: parent.status !== Image.Ready
+                                        Label {
+                                            anchors.centerIn: parent
+                                            text: qsTr("Image preview unavailable")
+                                            visible: parent.parent.status === Image.Error
+                                        }
+                                    }
+
+                                    ToolTip.visible: imgHover.containsMouse
+                                    ToolTip.text: modelData.path || ""
+
+                                    MouseArea {
+                                        id: imgHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                    }
+                                }
+                                
+                                TextField {
+                                    Layout.fillWidth: true
+                                    placeholderText: qsTr("Caption")
+                                    text: modelData.caption || ""
+                                    onTextEdited: {
+                                        apaForm.sections[sectionIndex].blocks[index].caption = text;
+                                        apaForm.scheduleUpdate();
+                                    }
+                                }
+                                
+                                TextArea {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 60
+                                    placeholderText: qsTr("Note (optional)")
+                                    text: modelData.note || ""
+                                    onTextChanged: {
+                                        apaForm.sections[sectionIndex].blocks[index].note = text;
+                                        apaForm.scheduleUpdate();
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Button {
+                            text: qsTr("+ Add Text")
+                            flat: true
+                            onClicked: apaForm.addTextBlock(sectionIndex)
+                        }
+                        Button {
+                            text: qsTr("+ Add Image")
+                            flat: true
+                            onClicked: apaForm.addImageBlock(sectionIndex)
                         }
                     }
                             
@@ -715,6 +825,7 @@ Item {
             id: "sec_" + Date.now(),
             title: "",
             content: "",
+            blocks: [{type: "text", content: ""}],
             isImplicit: false,
             level: 1
         });
@@ -740,6 +851,7 @@ Item {
             id: "sec_" + Date.now(),
             title: "",
             content: "",
+            blocks: [{type: "text", content: ""}],
             isImplicit: false,
             level: parentLevel + 1
         });
@@ -762,6 +874,65 @@ Item {
         newSections.splice(index, count);
         apaForm.sections = newSections;
         apaForm.scheduleUpdate();
+    }
+
+    function addTextBlock(sectionIndex) {
+        var newSections = apaForm.sections.slice();
+        var blocks = newSections[sectionIndex].blocks;
+        if (!blocks) {
+             blocks = [];
+             if (newSections[sectionIndex].content) {
+                 blocks.push({type: "text", content: newSections[sectionIndex].content});
+             }
+        }
+        blocks.push({type: "text", content: ""});
+        newSections[sectionIndex].blocks = blocks;
+        apaForm.sections = newSections;
+        apaForm.scheduleUpdate();
+    }
+
+    function addImageBlock(sectionIndex) {
+        var path = projectManager.select_image();
+        if (path === "") return;
+
+        var relativePath = projectManager.import_image(path, apaForm.projectLocation);
+        if (relativePath === "") return;
+
+        var newSections = apaForm.sections.slice();
+        var blocks = newSections[sectionIndex].blocks;
+        if (!blocks) {
+             blocks = [];
+             if (newSections[sectionIndex].content) {
+                 blocks.push({type: "text", content: newSections[sectionIndex].content});
+             }
+        }
+        blocks.push({
+            type: "image", 
+            path: relativePath,
+            caption: "",
+            note: "",
+            label: projectManager.generate_unique_id()
+        });
+        newSections[sectionIndex].blocks = blocks;
+        apaForm.sections = newSections;
+        apaForm.scheduleUpdate();
+    }
+
+    function removeBlock(sectionIndex, blockIndex) {
+        var newSections = apaForm.sections.slice();
+        var blocks = newSections[sectionIndex].blocks;
+        if (!blocks) {
+             blocks = [];
+             if (newSections[sectionIndex].content) {
+                 blocks.push({type: "text", content: newSections[sectionIndex].content});
+             }
+        }
+        if (blocks.length > blockIndex) {
+            blocks.splice(blockIndex, 1);
+            newSections[sectionIndex].blocks = blocks;
+            apaForm.sections = newSections;
+            apaForm.scheduleUpdate();
+        }
     }
 
     function addAffiliation() {

@@ -7,6 +7,7 @@ which are copied recursively to the user's chosen location.
 """
 
 import shutil
+import uuid
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QUrl, Signal, Slot
@@ -80,6 +81,74 @@ class ProjectManager(QObject):
             str(Path.home()),
         )
         return folder
+
+    @Slot(result=str)
+    def select_image(self):
+        """
+        Opens a native file selection dialog for images.
+
+        Returns:
+            The selected image path as a string, or an empty string if cancelled.
+        """
+        file_path, _ = QFileDialog.getOpenFileName(
+            None,
+            "Select Image",
+            str(Path.home()),
+            "Images (*.png *.jpg *.jpeg *.svg *.pdf)",
+        )
+        return file_path
+
+    @Slot(str, str, result=str)
+    def import_image(self, source_path: str, project_location: str):
+        """
+        Imports an image into the project's assets/images directory.
+
+        Args:
+            source_path: The path to the source image.
+            project_location: The project root location.
+
+        Returns:
+            The relative path to the imported image for use in Typst (e.g. "assets/images/foo.png").
+        """
+        try:
+            # Handle source path
+            if source_path.startswith("file:"):
+                src = Path(QUrl(source_path).toLocalFile())
+            else:
+                src = Path(source_path)
+
+            # Handle project path
+            if project_location.startswith("file:"):
+                proj = Path(QUrl(project_location).toLocalFile())
+            else:
+                proj = Path(project_location)
+
+            if not src.exists():
+                print(f"Error: Image source not found: {src}")
+                return ""
+
+            # Target directory
+            images_dir = proj / "assets" / "images"
+            images_dir.mkdir(parents=True, exist_ok=True)
+
+            # Destination file
+            dest = images_dir / src.name
+            
+            # Copy file
+            shutil.copy2(src, dest)
+            print(f"Imported image to: {dest}")
+
+            # Return relative path with forward slashes for Typst
+            return f"assets/images/{src.name}"
+
+        except Exception as e:
+            print(f"Error importing image: {e}")
+            return ""
+
+    @Slot(result=str)
+    def generate_unique_id(self):
+        """Generates a unique ID for an image label."""
+        return f"img:{uuid.uuid4()}"
 
     @Slot(str, str)
     def create_project(self, project_location: str, template_name: str):
