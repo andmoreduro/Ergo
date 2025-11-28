@@ -9,7 +9,7 @@ of page SVGs that can be displayed in the preview panel.
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import QFileSystemWatcher, QObject, QTimer, Signal, Slot
+from PySide6.QtCore import QFileSystemWatcher, QObject, QTimer, QUrl, Signal, Slot
 
 
 class OutputMonitor(QObject):
@@ -258,11 +258,13 @@ class OutputMonitor(QObject):
                     last_changed_index = idx
 
                 # Builds URL with the file's specific cache buster
-                url = f"file://{file_key}?t={cache_buster}"
+                base_url = QUrl.fromLocalFile(file_key).toString()
+                url = f"{base_url}?t={cache_buster}"
                 urls.append(url)
 
             except OSError:
                 # Fallback: use current time as cache buster
-                urls.append(f"file://{file_key}?t={current_time}")
+                base_url = QUrl.fromLocalFile(file_key).toString()
+                urls.append(f"{base_url}?t={current_time}")
 
         return urls, last_changed_index
