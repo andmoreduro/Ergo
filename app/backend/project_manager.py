@@ -95,7 +95,10 @@ class ProjectManager(QObject):
         """
         try:
             # Converts the QML URL to a local file path.
-            project_path = Path(QUrl(project_location).toLocalFile())
+            if project_location.startswith("file:"):
+                project_path = Path(QUrl(project_location).toLocalFile())
+            else:
+                project_path = Path(project_location)
         except Exception as e:
             error_msg = f"Invalid project location '{project_location}'. Details: {e}"
             print(f"Error: {error_msg}")

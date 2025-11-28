@@ -31,10 +31,7 @@ ApplicationWindow {
                     if (folder !== "") {
                         root.projectLocation = folder;
                         root.selectedTemplate = "apa7";
-                        // Use Qt.resolvedUrl to correctly format the path as a file URL
-                        // This handles platform differences (e.g., C:\ paths on Windows)
-                        var fileUrl = Qt.resolvedUrl(root.projectLocation);
-                        projectManager.create_project(fileUrl.toString(), root.selectedTemplate);
+                        projectManager.create_project(root.projectLocation, root.selectedTemplate);
                         apa7FormHandler.set_project_path(root.projectLocation);
                         processManager.set_project_path(root.projectLocation);
                         processManager.start_typst_watch();
