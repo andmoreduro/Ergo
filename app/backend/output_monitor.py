@@ -41,6 +41,12 @@ class OutputMonitor(QObject):
         self.watcher.directoryChanged.connect(self._on_directory_changed)
         self.watcher.fileChanged.connect(self._on_file_changed)
 
+        # Debounce timer to aggregate rapid file changes
+        self.debounce_timer = QTimer()
+        self.debounce_timer.setSingleShot(True)
+        self.debounce_timer.setInterval(200)  # Wait 200ms for batch updates to settle
+        self.debounce_timer.timeout.connect(self._scan_and_emit)
+
         # Polling timer as fallback when QFileSystemWatcher doesn't detect changes
         self.poll_timer = QTimer()
         self.poll_timer.setInterval(500)  # Poll less frequently since we watch files directly
@@ -84,6 +90,7 @@ class OutputMonitor(QObject):
     def stop_monitoring(self):
         """Stops monitoring the output directory."""
         self.poll_timer.stop()
+        self.debounce_timer.stop()
 
         watched_dirs = self.watcher.directories()
         watched_files = self.watcher.files()
@@ -117,7 +124,7 @@ class OutputMonitor(QObject):
         Args:
             path: The path of the directory that changed.
         """
-        self._scan_and_emit()
+        self.debounce_timer.start()
 
     def _on_file_changed(self, path: str):
         """
@@ -126,7 +133,7 @@ class OutputMonitor(QObject):
         Args:
             path: The path of the file that changed.
         """
-        self._scan_and_emit()
+        self.debounce_timer.start()
 
     def _check_for_changes(self):
         """
@@ -149,7 +156,7 @@ class OutputMonitor(QObject):
                     stored_mtime, _ = self.file_timestamps[file_key]
                     if current_mtime != stored_mtime:
                         # File changed - trigger scan
-                        self._scan_and_emit()
+                        self.debounce_timer.start()
                         return
             except OSError:
                 pass
@@ -226,7 +233,7 @@ class OutputMonitor(QObject):
 
         urls = []
         current_time = int(time.time() * 1000)  # Millisecond timestamp
-        first_changed_index = -1
+        last_changed_index = -1
 
         for idx, file_path in enumerate(files):
             file_key = str(file_path)
@@ -243,14 +250,12 @@ class OutputMonitor(QObject):
                         print(f"OutputMonitor: File modified - {file_path.name}")
                         cache_buster = current_time
                         self.file_timestamps[file_key] = (current_mtime, cache_buster)
-                        if first_changed_index == -1:
-                            first_changed_index = idx
+                        last_changed_index = idx
                 else:
                     # New file - initialize with current time
                     cache_buster = current_time
                     self.file_timestamps[file_key] = (current_mtime, cache_buster)
-                    if first_changed_index == -1:
-                        first_changed_index = idx
+                    last_changed_index = idx
 
                 # Builds URL with the file's specific cache buster
                 url = f"file://{file_key}?t={cache_buster}"
@@ -260,4 +265,4 @@ class OutputMonitor(QObject):
                 # Fallback: use current time as cache buster
                 urls.append(f"file://{file_key}?t={current_time}")
 
-        return urls, first_changed_index
+        return urls, last_changed_index

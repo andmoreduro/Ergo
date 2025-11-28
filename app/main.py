@@ -9,10 +9,9 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QLocale, QTranslator
-from PySide6.QtGui import QSurfaceFormat
+from PySide6.QtGui import QColor, QPalette, QSurfaceFormat
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType
 from PySide6.QtQuickControls2 import QQuickStyle
-import PySide6.QtSvg
 from PySide6.QtWidgets import QApplication
 
 from .backend.apa7_form_handler import Apa7FormHandler
@@ -30,14 +29,28 @@ def main():
     format.setSamples(4)
     QSurfaceFormat.setDefaultFormat(format)
 
-    app = QApplication(sys.argv)
-
     # --- Style Setup ---
     # Sets the Qt Quick Controls style based on the platform for better integration.
     # Enforce Fusion style with a light palette for a consistent, professional
     # look across all platforms (Windows, Linux, macOS).
     QQuickStyle.setStyle("Fusion")
-    QQuickStyle.setPalette("Light")
+
+    app = QApplication(sys.argv)
+
+    # Manually configure a light palette to resolve visibility issues on Windows
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(245, 245, 245))
+    palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    app.setPalette(palette)
 
     # --- Backend Setup ---
     # Instantiates the managers that handle backend logic.

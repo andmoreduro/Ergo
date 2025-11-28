@@ -121,15 +121,34 @@ class Apa7FormHandler(QObject):
             sections_dir = self.project_path / "sections"
             sections_dir.mkdir(exist_ok=True)
 
-            # Write individual section files
+            # Write section files (Level 1 sections get their own file, subsections are appended)
+            current_l1_id = None
+            current_l1_content = []
+
             for section in sections:
                 sec_id = section.get("id")
                 sec_title = section.get("title", "")
                 sec_content = section.get("content", "")
-                
-                if sec_id:
-                    file_content = f"= {self._escape_typst(sec_title)}\n\n{sec_content}"
-                    (sections_dir / f"{sec_id}.typ").write_text(file_content, encoding="utf-8")
+                level = int(section.get("level", 1))
+
+                heading_markup = f"{'=' * level} {self._escape_typst(sec_title)}"
+                full_content = f"{heading_markup}\n\n{sec_content}"
+
+                if level == 1:
+                    # Write previous accumulated L1 section if exists
+                    if current_l1_id:
+                        (sections_dir / f"{current_l1_id}.typ").write_text("\n\n".join(current_l1_content), encoding="utf-8")
+                    
+                    current_l1_id = sec_id
+                    current_l1_content = [full_content]
+                else:
+                    # Append subsection to current L1 section
+                    if current_l1_id:
+                        current_l1_content.append(full_content)
+
+            # Write the final section
+            if current_l1_id:
+                (sections_dir / f"{current_l1_id}.typ").write_text("\n\n".join(current_l1_content), encoding="utf-8")
 
             content = self._build_main_typ_content(
                 title,
@@ -304,7 +323,8 @@ class Apa7FormHandler(QObject):
         # Include sections
         for section in sections:
             sec_id = section.get("id")
-            if sec_id:
+            level = int(section.get("level", 1))
+            if sec_id and level == 1:
                 lines.append(f'#include "sections/{sec_id}.typ"')
         lines.append("")
 

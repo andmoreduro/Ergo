@@ -20,10 +20,10 @@ Item {
         anchors.fill: projectView
         orientation: Qt.Horizontal
 
-        // --- First Column: Document Structure Panel ---
-        // Displays the hierarchical structure of the document (sections, subsections).
-        DocumentStructurePanel {
-            id: structurePanel
+        // --- First Column: Project Sidebar ---
+        // Displays the hierarchical structure of the document and bibliography.
+        ProjectSidebar {
+            id: sidebar
             SplitView.fillWidth: false
             SplitView.preferredWidth: mainSplitView.width * 0.20
             SplitView.minimumWidth: 150

@@ -10,21 +10,56 @@ ColumnLayout {
     property var imageSources: []
     property int zoomLevel: 100 // Percentage
 
+    Timer {
+        id: scrollRetryTimer
+        interval: 100
+        repeat: false
+        property int targetIndex: -1
+        onTriggered: root.scrollToPage(targetIndex)
+    }
+
     // Scroll to a specific page index
     function scrollToPage(index) {
-        if (index < 0 || index >= imageRepeater.count) return;
+        if (index < 0) return;
+        
+        // Wait if model isn't populated yet
+        if (imageRepeater.count === 0 || index >= imageRepeater.count) {
+            scrollRetryTimer.targetIndex = index;
+            scrollRetryTimer.restart();
+            return;
+        }
         
         var item = imageRepeater.itemAt(index);
-        if (item) {
+        // Ensure item exists and has been laid out
+        if (item && item.height > 0) {
             // Calculate the item's y-position relative to the content container
             var pos = item.mapToItem(workspace, 0, 0);
+
+            // Verify layout has occurred: items beyond the first one should not be at the very top
+            // Since paperColumn is centered with 100px extra height, top is at 50px.
+            // So any item > 0 should be well below 50px.
+            if (index > 0 && pos.y < 100) {
+                scrollRetryTimer.targetIndex = index;
+                scrollRetryTimer.restart();
+                return;
+            }
+
             if (pos) {
-                // Calculate the scroll position as a ratio (0.0 to 1.0)
-                var targetRatio = Math.max(0, pos.y - 20) / (workspace.height - previewScrollView.availableHeight);
-                if (ScrollBar.vertical) {
-                    ScrollBar.vertical.position = Math.min(1.0, targetRatio);
+                // Calculate the scroll position
+                // ScrollBar.position corresponds to contentY / contentHeight
+                var targetPosition = Math.max(0, pos.y - 20) / workspace.height;
+
+                if (previewScrollView.ScrollBar.vertical) {
+                    previewScrollView.ScrollBar.vertical.position = targetPosition;
+                } else if (previewScrollView.contentItem && previewScrollView.contentItem.contentY !== undefined) {
+                    // Fallback: Access the internal Flickable directly
+                    previewScrollView.contentItem.contentY = Math.max(0, pos.y - 20);
                 }
             }
+        } else {
+            // Item not ready, retry
+            scrollRetryTimer.targetIndex = index;
+            scrollRetryTimer.restart();
         }
     }
 

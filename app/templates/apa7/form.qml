@@ -620,9 +620,17 @@ Item {
                 delegate: ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 5
+                    Layout.leftMargin: ((modelData.level || 1) - 1) * 30
 
                     RowLayout {
                         Layout.fillWidth: true
+
+                        Label {
+                            text: (modelData.level || 1) > 1 ? "↳" : ""
+                            visible: (modelData.level || 1) > 1
+                            font.bold: true
+                        }
+
                         TextField {
                             id: sectionTitleField
                             Layout.fillWidth: true
@@ -632,10 +640,18 @@ Item {
                             onTextEdited: {
                                 if (text !== modelData.title) {
                                     apaForm.sections[index].title = text;
+                                    apaForm.sectionTitleChanged();
                                     apaForm.scheduleUpdate();
                                 }
                             }
                         }
+                        Button {
+                            text: "+ Sub"
+                            flat: true
+                            visible: (modelData.level || 1) < 5 && !modelData.isImplicit
+                            onClicked: apaForm.addSubsection(index)
+                        }
+
                         Button {
                             text: "−"
                             flat: true
@@ -691,21 +707,59 @@ Item {
     property int nextAffiliationId: 1
     property int nextAuthorId: 1
 
+    signal sectionTitleChanged()
+
     function addSection() {
         var newSections = apaForm.sections.slice();
         newSections.push({
             id: "sec_" + Date.now(),
             title: "",
             content: "",
-            isImplicit: false
+            isImplicit: false,
+            level: 1
+        });
+        apaForm.sections = newSections;
+        apaForm.scheduleUpdate();
+    }
+
+    function addSubsection(parentIndex) {
+        var parentLevel = apaForm.sections[parentIndex].level || 1;
+        if (parentLevel >= 5) return;
+
+        var newSections = apaForm.sections.slice();
+        var insertIndex = parentIndex + 1;
+        
+        // Find insertion point (end of children)
+        while (insertIndex < newSections.length) {
+            var nextLevel = newSections[insertIndex].level || 1;
+            if (nextLevel <= parentLevel) break;
+            insertIndex++;
+        }
+
+        newSections.splice(insertIndex, 0, {
+            id: "sec_" + Date.now(),
+            title: "",
+            content: "",
+            isImplicit: false,
+            level: parentLevel + 1
         });
         apaForm.sections = newSections;
         apaForm.scheduleUpdate();
     }
 
     function removeSection(index) {
+        var level = apaForm.sections[index].level || 1;
         var newSections = apaForm.sections.slice();
-        newSections.splice(index, 1);
+        
+        // Remove section and all its subsections
+        var count = 1;
+        while (index + count < newSections.length) {
+            var nextLevel = newSections[index + count].level || 1;
+            if (nextLevel <= level) break;
+            count++;
+        }
+
+        newSections.splice(index, count);
         apaForm.sections = newSections;
         apaForm.scheduleUpdate();
     }
