@@ -15,6 +15,12 @@ Item {
     property string projectLocation: ""
     property alias formItem: formLoader.item
 
+    onProjectLocationChanged: {
+        if (projectLocation !== "") {
+            bibliographyManager.set_project_path(projectLocation)
+        }
+    }
+
     SplitView {
         id: mainSplitView
         anchors.fill: projectView

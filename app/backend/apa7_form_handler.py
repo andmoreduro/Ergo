@@ -167,13 +167,9 @@ class Apa7FormHandler(QObject):
                     sec_content = section.get("content", "")
 
                 level = int(section.get("level", 1))
-                is_implicit = section.get("isImplicit", False)
 
-                if is_implicit:
-                    full_content = sec_content
-                else:
-                    heading_markup = f"{'=' * level} {self._escape_typst(sec_title)}"
-                    full_content = f"{heading_markup}\n\n{sec_content}"
+                heading_markup = f"{'=' * level} {self._escape_typst(sec_title)}"
+                full_content = f"{heading_markup}\n\n{sec_content}"
 
                 if level == 1:
                     # Write previous accumulated L1 section if exists
@@ -343,7 +339,7 @@ class Apa7FormHandler(QObject):
         lines.append(f'  region: "{region}",')
         lines.append(f'  language: "{language}",')
         lines.append(f'  paper-size: "{paper_size}",')
-        lines.append(f"  implicit-introduction-heading: {str(implicit_intro).lower()},")
+        lines.append("  implicit-introduction-heading: false,")
         lines.append(f"  abstract-as-description: {str(abstract_as_desc).lower()},")
         lines.append(")")
         lines.append("")

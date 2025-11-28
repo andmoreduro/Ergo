@@ -7,6 +7,12 @@ ColumnLayout {
     id: root
     spacing: 0
 
+    ExportDialog {
+        id: exportDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+    }
+
     property var imageSources: []
     property int zoomLevel: 100 // Percentage
 
@@ -88,7 +94,7 @@ ColumnLayout {
             Button {
                 text: qsTr("⇩ PDF")
                 flat: true
-                onClicked: processManager.export_pdf()
+                onClicked: exportDialog.open()
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Export project as PDF")
             }
@@ -195,7 +201,7 @@ ColumnLayout {
 
                         // Calculate height based on aspect ratio of the loaded image
                         // Default to roughly US Letter aspect ratio (1.29) if loading
-                        height: (imageContent.implicitWidth > 0 && imageContent.implicitHeight > 0)
+                        height: (imageContent && imageContent.implicitWidth > 0 && imageContent.implicitHeight > 0)
                                               ? (pageDelegate.width / imageContent.implicitWidth * imageContent.implicitHeight)
                                               : pageDelegate.width * 1.2941
 

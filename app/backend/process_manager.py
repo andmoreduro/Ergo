@@ -7,9 +7,10 @@ are detected.
 """
 import sys
 import platform
+import shutil
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QProcess, Signal, Slot
+from PySide6.QtCore import QObject, QProcess, QUrl, Signal, Slot
 
 
 class ProcessManager(QObject):
@@ -33,6 +34,9 @@ class ProcessManager(QObject):
 
     # Signal emitted when the process stops
     processStopped = Signal()
+
+    # Signal for PDF export completion
+    pdfExportFinished = Signal(bool, str)  # success: bool, message: str
 
     def __init__(self, parent=None):
         """Initializes the ProcessManager and its internal QProcess instance."""
@@ -157,38 +161,66 @@ class ProcessManager(QObject):
         """
         return self.process.state() != QProcess.ProcessState.NotRunning
 
-    @Slot()
-    def export_pdf(self):
+    @Slot(str)
+    def export_pdf(self, destination_folder_url: str):
         """
-        Compiles the project to PDF.
+        Asynchronously compiles the project to PDF and moves it to a destination.
+
+        Args:
+            destination_folder_url: The file URL of the folder to save the PDF in.
         """
         if not self.project_path:
-            print("Error: Cannot export PDF - project path not set.")
+            self.pdfExportFinished.emit(False, "Project path not set.")
             return
 
         executable_path = self._get_typst_executable_path()
         if not executable_path:
+            self.pdfExportFinished.emit(False, "Typst executable not found.")
             return
 
-        print("Starting PDF export...")
+        try:
+            dest_folder = Path(QUrl(destination_folder_url).toLocalFile())
+            if not dest_folder.is_dir():
+                self.pdfExportFinished.emit(False, "Destination is not a valid folder.")
+                return
+        except Exception as e:
+            self.pdfExportFinished.emit(False, f"Invalid destination path: {e}")
+            return
 
-        process = QProcess()
-        process.setWorkingDirectory(self.project_path)
-        
-        # Arguments for typst compile: typst compile main.typ
-        arguments = ["compile", "main.typ"]
+        # Define source and final destination paths
+        output_dir = Path(self.project_path) / "output"
+        output_dir.mkdir(exist_ok=True)
+        source_pdf = output_dir / "main.pdf"
+        final_dest_pdf = dest_folder / f"{Path(self.project_path).name}.pdf"
 
-        process.start(executable_path, arguments)
+        # Use a new QProcess instance for export to not interfere with the watch process
+        export_process = QProcess()
+        export_process.setWorkingDirectory(self.project_path)
         
-        if process.waitForFinished(10000):  # 10 second timeout
-            if process.exitStatus() == QProcess.ExitStatus.NormalExit and process.exitCode() == 0:
-                print("PDF export successful.")
+        # Arguments: typst compile main.typ output/main.pdf
+        arguments = ["compile", "main.typ", str(source_pdf)]
+
+        # This handler will be called when the export process finishes
+        def on_finished(exit_code, exit_status):
+            if exit_status == QProcess.ExitStatus.NormalExit and exit_code == 0:
+                # Check if PDF exists
+                if source_pdf.exists():
+                    try:
+                        # Move the file
+                        shutil.move(str(source_pdf), str(final_dest_pdf))
+                        self.pdfExportFinished.emit(True, f"Successfully exported to:\n{final_dest_pdf}")
+                    except Exception as e:
+                        self.pdfExportFinished.emit(False, f"Failed to move PDF: {e}")
+                else:
+                    self.pdfExportFinished.emit(False, "Typst reported success, but PDF file was not found.")
             else:
-                print(f"PDF export failed. Exit code: {process.exitCode()}")
-                print(f"Error output: {process.readAllStandardError().data().decode('utf-8')}")
-        else:
-            print("PDF export timed out.")
-            process.kill()
+                error_output = export_process.readAllStandardError().data().decode('utf-8', errors='replace')
+                self.pdfExportFinished.emit(False, f"PDF export failed.\n\nError:\n{error_output}")
+            
+            export_process.deleteLater() # Clean up the process object
+
+        export_process.finished.connect(on_finished)
+        export_process.start(executable_path, arguments)
 
     def _handle_stdout(self):
         """Handles standard output from the Typst process."""

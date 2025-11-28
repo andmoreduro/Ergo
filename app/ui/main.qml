@@ -27,18 +27,7 @@ ApplicationWindow {
                 id: newProjectAction
                 text: qsTr("New Ergo project")
                 onTriggered: {
-                    var folder = projectManager.select_folder();
-                    if (folder !== "") {
-                        root.projectLocation = folder;
-                        root.selectedTemplate = "apa7";
-                        projectManager.create_project(root.projectLocation, root.selectedTemplate);
-                        apa7FormHandler.set_project_path(root.projectLocation);
-                        processManager.set_project_path(root.projectLocation);
-                        processManager.start_typst_watch();
-                        outputMonitor.set_project_path(root.projectLocation);
-                        viewLoader.source = "ProjectView.qml";
-                        root.projectActive = true;
-                    }
+                    newProjectDialog.open()
                 }
             }
 
@@ -46,10 +35,7 @@ ApplicationWindow {
                 id: openProjectAction
                 text: qsTr("Open Ergo project")
                 onTriggered: {
-                    var folder = projectManager.select_folder();
-                    if (folder !== "") {
-                        openProject(folder);
-                    }
+                    openProjectDialog.open()
                 }
             }
         }
@@ -127,6 +113,34 @@ ApplicationWindow {
     }
 
 
+
+    NewProjectDialog {
+        id: newProjectDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+
+        onAccepted: {
+            root.projectLocation = newProjectDialog.fullPath
+            root.selectedTemplate = newProjectDialog.selectedTemplate
+
+            projectManager.create_project(root.projectLocation, root.selectedTemplate)
+            apa7FormHandler.set_project_path(root.projectLocation)
+            processManager.set_project_path(root.projectLocation)
+            processManager.start_typst_watch()
+            outputMonitor.set_project_path(root.projectLocation)
+            viewLoader.source = "ProjectView.qml"
+            root.projectActive = true
+        }
+    }
+
+    OpenProjectDialog {
+        id: openProjectDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        onProjectSelected: (path) => {
+            root.openProject(path)
+        }
+    }
 
     ProjectSettingsDialog {
         id: projectSettingsDialog

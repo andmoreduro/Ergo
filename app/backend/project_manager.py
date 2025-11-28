@@ -10,7 +10,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QUrl, Signal, Slot
+from PySide6.QtCore import QObject, QStandardPaths, QUrl, Signal, Slot
 from PySide6.QtWidgets import QFileDialog
 
 
@@ -146,6 +146,16 @@ class ProjectManager(QObject):
             return ""
 
     @Slot(result=str)
+    def get_documents_location(self):
+        """
+        Gets the platform-specific user Documents folder path.
+
+        Returns:
+            The path to the Documents folder as a string.
+        """
+        return QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
+
+    @Slot(result=str)
     def generate_unique_id(self):
         """Generates a unique ID for an image label."""
         return f"img:{uuid.uuid4()}"
@@ -274,8 +284,8 @@ class ProjectManager(QObject):
                 try:
                     # Reads the first few lines as the description.
                     description = desc_file.read_text(encoding="utf-8")
-                    # Returns the first 200 characters as a preview.
-                    return description[:200].strip()
+                    # Returns the first 500 characters as a preview.
+                    return description[:500].strip()
                 except OSError:
                     pass
 

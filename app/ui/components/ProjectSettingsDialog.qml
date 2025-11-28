@@ -181,12 +181,17 @@ Dialog {
             ComboBox {
                 id: regionComboBox
                 Layout.fillWidth: true
-                model: ["us", "uk", "au"]
+                textRole: "text"
+                valueRole: "value"
+                model: [
+                    { value: "us", text: qsTr("United States") },
+                    { value: "co", text: qsTr("Colombia") }
+                ]
                 Component.onCompleted: {
                     regionComboBox.currentIndex = regionComboBox.indexOfValue(projectSettingsDialog.region);
                 }
-                onCurrentTextChanged: {
-                    projectSettingsDialog.region = regionComboBox.currentText;
+                onActivated: {
+                    projectSettingsDialog.region = currentValue;
                 }
             }
 
@@ -197,12 +202,17 @@ Dialog {
             ComboBox {
                 id: languageComboBox
                 Layout.fillWidth: true
-                model: ["en", "es", "fr", "de"]
+                textRole: "text"
+                valueRole: "value"
+                model: [
+                    { value: "en", text: qsTr("English") },
+                    { value: "es", text: qsTr("Spanish") }
+                ]
                 Component.onCompleted: {
                     languageComboBox.currentIndex = languageComboBox.indexOfValue(projectSettingsDialog.language);
                 }
-                onCurrentTextChanged: {
-                    projectSettingsDialog.language = languageComboBox.currentText;
+                onActivated: {
+                    projectSettingsDialog.language = currentValue;
                 }
             }
 

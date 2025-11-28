@@ -15,6 +15,7 @@ from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtWidgets import QApplication
 
 from .backend.apa7_form_handler import Apa7FormHandler
+from .backend.bibliography_manager import BibliographyManager
 from .backend.output_monitor import OutputMonitor
 from .backend.process_manager import ProcessManager
 from .backend.project_manager import ProjectManager
@@ -40,6 +41,7 @@ def main():
     # --- Backend Setup ---
     # Instantiates the managers that handle backend logic.
     process_manager = ProcessManager()
+    bibliography_manager = BibliographyManager()
     settings_manager = SettingsManager()
     # ProjectManager receives the settings_manager to track recent projects.
     project_manager = ProjectManager(settings_manager=settings_manager)
@@ -71,6 +73,7 @@ def main():
     # Exposes the manager instances to the QML context, allowing the UI to
     # call their methods.
     engine.rootContext().setContextProperty("processManager", process_manager)
+    engine.rootContext().setContextProperty("bibliographyManager", bibliography_manager)
     engine.rootContext().setContextProperty("projectManager", project_manager)
     engine.rootContext().setContextProperty("settingsManager", settings_manager)
     engine.rootContext().setContextProperty("apa7FormHandler", apa7_form_handler)

@@ -22,7 +22,7 @@ ColumnLayout {
     ScrollView {
         id: recentProjectsScrollView
         Layout.fillWidth: true
-        Layout.preferredHeight: Math.min(recentProjectsList.count * 50, 300)
+        Layout.preferredHeight: Math.min(recentProjectsList.count * 55, 165)
         clip: true
 
         ListView {

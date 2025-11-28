@@ -15,10 +15,10 @@ Item {
     property var affiliations: []
     property var sections: []
     property string projectLocation: ""
-    
+
     // Property to track if there are valid affiliations (updates without recreating delegates)
     property bool hasValidAffiliations: false
-    
+
     // Timestamp that changes to force checkbox text re-evaluation without recreating delegates
     property int affiliationNamesVersion: 0
 
@@ -41,7 +41,7 @@ Item {
     onImplicitIntroductionHeadingChanged: {
         var newSections = apaForm.sections.slice();
         var hasIntro = newSections.length > 0 && newSections[0].id === "implicit_intro";
-        
+
         if (implicitIntroductionHeading) {
             if (!hasIntro) {
                 newSections.unshift({
@@ -61,7 +61,7 @@ Item {
             }
         }
     }
-    
+
     // Helper function to update hasValidAffiliations property
     function updateValidAffiliationsState() {
         var hasValid = false;
@@ -85,7 +85,7 @@ Item {
 
         // Adds a timestamp to track the update request
         updateQueue.push(Date.now());
-        
+
         // If not already processing, start processing the queue
         if (!isProcessing) {
             processQueue();
@@ -100,13 +100,13 @@ Item {
         }
 
         isProcessing = true;
-        
+
         // Clears the queue and processes once (handles all accumulated changes)
         updateQueue = [];
-        
+
         // Generates the file
         apaForm.generateMainTyp();
-        
+
         // Uses a short timer to avoid blocking the UI thread
         Qt.callLater(processQueue);
     }
@@ -114,16 +114,16 @@ Item {
     // Function to load saved data from JSON
     function loadSavedData() {
         isLoading = true;
-        
+
         var dataLoaded = false;
         if (typeof apa7FormHandler !== 'undefined') {
             var data = apa7FormHandler.load_form_data();
-            
+
             if (data && Object.keys(data).length > 0) {
                 dataLoaded = true;
                 // Helper to safely get string
                 var getStr = function(val) { return val ? val : ""; };
-                
+
                 titleField.text = getStr(data.title);
                 runningHeadField.text = getStr(data.running_head);
                 authorNotesTextArea.text = getStr(data.author_notes);
@@ -132,7 +132,7 @@ Item {
                 dueDateField.text = getStr(data.due_date);
                 abstractTextArea.text = getStr(data.abstract);
                 keywordsField.text = getStr(data.keywords);
-                
+
                 // Load formatting settings
                 if (data.font_family) apaForm.fontFamily = data.font_family;
                 if (data.font_size) apaForm.fontSize = data.font_size;
@@ -154,7 +154,7 @@ Item {
                     }
                     apaForm.nextAffiliationId = maxId + 1;
                 }
-                
+
                 if (data.authors) {
                     apaForm.authors = data.authors;
                     var maxAuthId = 0;
@@ -163,13 +163,13 @@ Item {
                     }
                     apaForm.nextAuthorId = maxAuthId + 1;
                 }
-                
+
                 apaForm.updateValidAffiliationsState();
             }
         }
-        
+
         isLoading = false;
-        
+
         // ONLY schedule an update if we actually loaded data.
         // This prevents overwriting a new project's default JSON
         // with an empty state before the user has made any changes.
@@ -213,8 +213,18 @@ Item {
         TabBar {
             id: formTabBar
             Layout.fillWidth: true
-            TabButton { text: qsTr("Cover Page") }
-            TabButton { text: qsTr("Content") }
+            Layout.preferredHeight: 40
+
+            TabButton {
+                text: qsTr("Cover Page")
+                height: parent.height
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            TabButton {
+                text: qsTr("Content")
+                height: parent.height
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
 
         StackLayout {
@@ -434,7 +444,7 @@ Item {
                 color: apaForm.palette.text
                 opacity: 0.7
             }
-            
+
             Repeater {
                 id: affiliationsRepeater
                 model: apaForm.affiliations
@@ -442,7 +452,7 @@ Item {
                     id: affiliationDelegate
                     Layout.fillWidth: true
                     spacing: 5
-                    
+
                     property var rootForm: apaForm
 
                     TextField {
@@ -656,11 +666,11 @@ Item {
                             flat: true
                             visible: !modelData.isImplicit
                             onClicked: sectionMenu.open()
-                            
+
                             Menu {
                                 id: sectionMenu
                                 y: parent.height
-                                
+
                                 MenuItem {
                                     text: qsTr("Add Subsection")
                                     enabled: (modelData.level || 1) < 5
@@ -681,7 +691,7 @@ Item {
                         delegate: ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 5
-                            
+
                             // Header for block
                             RowLayout {
                                 Layout.fillWidth: true
@@ -719,7 +729,7 @@ Item {
                                 visible: modelData.type === "image"
                                 Layout.fillWidth: true
                                 spacing: 5
-                                
+
                                 Image {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 200
@@ -748,7 +758,7 @@ Item {
                                         hoverEnabled: true
                                     }
                                 }
-                                
+
                                 TextField {
                                     Layout.fillWidth: true
                                     placeholderText: qsTr("Caption")
@@ -758,7 +768,7 @@ Item {
                                         apaForm.scheduleUpdate();
                                     }
                                 }
-                                
+
                                 TextArea {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 60
@@ -785,7 +795,7 @@ Item {
                             onClicked: apaForm.addImageBlock(sectionIndex)
                         }
                     }
-                            
+
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
@@ -839,7 +849,7 @@ Item {
 
         var newSections = apaForm.sections.slice();
         var insertIndex = parentIndex + 1;
-        
+
         // Find insertion point (end of children)
         while (insertIndex < newSections.length) {
             var nextLevel = newSections[insertIndex].level || 1;
@@ -862,7 +872,7 @@ Item {
     function removeSection(index) {
         var level = apaForm.sections[index].level || 1;
         var newSections = apaForm.sections.slice();
-        
+
         // Remove section and all its subsections
         var count = 1;
         while (index + count < newSections.length) {
@@ -907,7 +917,7 @@ Item {
              }
         }
         blocks.push({
-            type: "image", 
+            type: "image",
             path: relativePath,
             caption: "",
             note: "",
@@ -957,7 +967,7 @@ Item {
             }
         }
         apaForm.authors = newAuthors;
-        
+
         var newAffiliations = apaForm.affiliations.slice();
         newAffiliations.splice(index, 1);
         apaForm.affiliations = newAffiliations;
