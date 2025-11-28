@@ -10,6 +10,7 @@ ApplicationWindow {
     width: 800
     height: 600
     visible: true
+    color: root.palette.window
 
     property string projectLocation: ""
     property string selectedTemplate: ""
